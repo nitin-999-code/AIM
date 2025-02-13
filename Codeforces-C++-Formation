@@ -1,0 +1,107 @@
+const int N = 1 << 19;
+const ll mx = 1e9 + 7;
+const ll inf = 1e14;
+int n, q;
+ll a[N];
+struct it {
+	ll l, r;
+	ll val;
+};
+vector<it>ds[33];
+struct DS {
+	ll arr[N], val[N];
+	int tot;
+	ll seg[N];
+	void add(int x, int L, int R, int l, int r, ll w) {
+		if(l <= L && R <= r) return seg[x] = max(seg[x], w), void();
+		int mid = (L + R) >> 1;
+		if(l <= mid) add(x * 2, L, mid, l, r, w);
+		if(r > mid) add(x * 2 + 1, mid + 1, R, l, r, w);
+	}
+	void push(int x, int L, int R) {
+		if(L == R) return val[L] = seg[x], void();
+		seg[x * 2] = max(seg[x * 2], seg[x]);
+		seg[x * 2 + 1] = max(seg[x * 2 + 1], seg[x]);
+		int mid = (L + R) >> 1;
+		push(x * 2, L, mid);
+		push(x * 2 + 1, mid + 1, R);
+	}
+	void build(vector<it>bd) {
+		tot = 0;
+		for(auto u : bd) {
+			arr[++tot] = u.l;
+			arr[++tot] = u.r + 1;
+		}
+		sort(arr + 1, arr + tot + 1);
+		tot = unique(arr + 1, arr + tot + 1) - arr - 1;
+		L(i, 0, tot * 4 + 1) seg[i] = val[i] = 0;
+		for(auto u : bd){ 
+			int ls = lower_bound(arr + 1, arr + tot + 1, u.l) - arr;
+			int rs = lower_bound(arr + 1, arr + tot + 1, u.r + 1) - arr - 1;
+			add(1, 1, tot, ls, rs, u.val);
+		}
+		if(tot) push(1, 1, tot);
+	}
+	ll query(ll p, int k) {
+		ll s = -val[upper_bound(arr + 1, arr + tot + 1, p) - arr - 1];
+		L(t, 1, k) s += p, p = (p + 1) >> 1;
+		return s;
+	}
+};
+ 
+mt19937 rng;
+DS f[33];
+void Main() {
+	cin >> n >> q;
+	L(i, 1, n) {
+		cin >> a[i];
+		vector<ll>inc;
+		R(t, i, max(i - 31, 1)) {
+			if((a[t] << (i - t)) - a[i] <= mx) {
+				inc.pb((a[t] << (i - t)));
+			}
+		}
+		sort(inc.begin(), inc.end());
+		ll sum = a[i];
+		L(j, 1, sz(inc)) {
+			ll l = inc[j - 1], r = j == sz(inc) ? mx : inc[j];
+			it qwq;
+			qwq.l = l, qwq.r = r, qwq.val = sum;
+			// if(j == 2) cout << l << ' ' << r << " : " << sum << endl;
+			ds[j].pb(qwq);
+			sum += a[i - j];
+		}
+	}
+	L(i, 1, 31) {
+		f[i].build(ds[i]);
+	}
+	// cout << f[2].query(21, 2) << endl;
+	while(q--) {
+		ll k;
+		cin >> k;
+		vi shu(31);
+		iota(shu.begin(), shu.end(), 1);
+		ll ans = 0;
+		R(g, 30, 0) {
+			for(auto p : shu) {
+				// if(p == 2 && ans + (1 << g) == 27) {
+				// 	cout << (ans + (1 << g)) << " : " << f[p].query(ans + (1 << g), p) << endl;
+				// }
+				if(f[p].query(ans + (1 << g), p) <= k) {
+					ans += 1 << g;
+					break;
+				}
+			}
+		}
+		cout << ans << ' ';
+	}
+	cout << '\n';
+	L(i, 1, 31) ds[i].clear();
+}
+ 
+int main() {
+	ios :: sync_with_stdio(false);
+	cin.tie(0); cout.tie(0);
+	int t; cin >> t; while(t--) Main();
+	return 0;
+}
